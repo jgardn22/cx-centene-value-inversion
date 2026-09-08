@@ -209,7 +209,7 @@ body {
 .pulse-dot { width: 8px; height: 8px; border-radius: 999px; background: var(--cp-accent); display: inline-block; animation: pulse 2.2s ease infinite; }
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 h1 { max-width: 980px; margin: 0; font-size: clamp(2rem, 4vw, 4rem); line-height: 1.02; letter-spacing: -0.04em; }
-h1 em { font-style: italic; color: var(--cp-accent); }
+h1 em { font-style: italic; color: var(--cp-accent); white-space: nowrap; }
 .hero p.lede { max-width: 900px; margin: 14px 0 0; color: var(--cp-text-muted); font-size: clamp(1rem, 1.5vw, 1.2rem); line-height: 1.5; }
 .hero-foot { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-top: 22px; font-size: 0.8rem; color: var(--cp-text-soft); }
 
@@ -446,7 +446,7 @@ HERO = f"""
     <img id="logo-centene" src="{CENTENE_COLOR}" alt="Centene Corporation" />
   </div>
   <p class="eyebrow"><span class="pulse-dot" aria-hidden="true"></span> Centene Corporation &middot; Executive decision canvas</p>
-  <h1>The Enterprise Application <em>Value Inversion</em></h1>
+  <h1>The Enterprise Application<br/><em>Value Inversion</em></h1>
   <p class="lede">The total cost of your application portfolio is inverting. This canvas walks the strategic argument, Centene-specific economics, and the practical next step: click through Problem, Status Quo, The Big Question, Opportunity, New Approach, and Plan.</p>
   <div class="hero-foot">
     <span>Prepared by Microsoft for Centene Corporation &middot; confidential</span>
