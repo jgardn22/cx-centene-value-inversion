@@ -81,10 +81,11 @@ FLOOR_SAVINGS_POTENTIAL = TAM_TOTAL - FLOOR_M      # full run-rate $/yr saved, n
 CEILING_SAVINGS_POTENTIAL = TAM_TOTAL - CEILING_M  # full run-rate $/yr saved, broadly-licensed
 
 # Back-loaded migration ramp (% of the TAM migrated each year), capped at 60% by
-# Year 10: no savings in Year 1, minimal in Years 2-3, faster afterwards. The
+# Year 10: break-even in Year 1 (0.45% covers the $3.6M license), slow in Years
+# 2-3, faster afterwards. The
 # Power Apps license (80,000 seats) is a flat cost from Year 1; Dynamics 365
 # (broad scenario) is licensed in proportion to what has migrated.
-RAMP_PCT = [0, 0.5, 1.5, 5, 10, 20, 30, 40, 50, 60]
+RAMP_PCT = [0.45, 1, 2.5, 5, 10, 20, 30, 40, 50, 60]
 TENYR_YEARS = list(range(1, 11))
 D365_FULL_M = CENTENE_EMPLOYEES * D365_RATE * 12 / 1_000_000
 TENYR_GROSS_ANNUAL = [TAM_TOTAL * r / 100 for r in RAMP_PCT]
@@ -619,7 +620,7 @@ PANEL_OPPORTUNITY = f"""
   </div>
 
   <div class="card">
-    <div class="card-header"><h3>The {fmt_big_m(TAM_TOTAL)} opportunity</h3><p>What a deliberately slow, back-loaded migration saves: annual net savings vs. today's spend, Year 1&ndash;10. No savings in Year 1, minimal in Years 2&ndash;3, capped at 60% of the TAM by Year 10.</p></div>
+    <div class="card-header"><h3>The {fmt_big_m(TAM_TOTAL)} opportunity</h3><p>What a deliberately slow, back-loaded migration saves: annual net savings vs. today's spend, Year 1&ndash;10. Break-even in Year 1, slow in Years 2&ndash;3, capped at 60% of the TAM by Year 10.</p></div>
     <div class="chart-wrap">
       <div class="chart-bars" id="savingsChart"></div>
       <div class="chart-legend">
@@ -631,7 +632,7 @@ PANEL_OPPORTUNITY = f"""
       <div class="stat-card" style="border-top-color:var(--cp-green)"><div class="stat-num" style="color:var(--cp-green)">{fmt_big_m(TENYR_FLOOR_ANNUAL[-1])}</div><p>Net savings per year by Year 10 with 60% of the {fmt_big_m(TAM_TOTAL)} TAM migrated (as low as {fmt_big_m(TENYR_CEILING_ANNUAL[-1])}/yr if broadly licensed). The other 40%, {fmt_big_m(UPSIDE_TAM_M)}/yr, is upside.</p></div>
       <div class="stat-card" style="border-top-color:var(--cp-green)"><div class="stat-num" style="color:var(--cp-green)">${TENYR_FLOOR_CUMULATIVE / 1000:.2f}B</div><p>Up to this much in cumulative 10-year net savings (as low as ${TENYR_CEILING_CUMULATIVE / 1000:.2f}B if broadly licensed)</p></div>
     </div>
-    <p class="source-note">Figures are NET savings: third-party spend avoided minus the Microsoft license cost incurred, modeled at 80,000 Power Apps Premium seats at $3.79/user/month from Year 1 and, for Dynamics 365, Centene's 61,100-employee headcount at $28.97/user/month licensed in proportion to what has migrated. Migration ramp: 0%, 0.5%, 1.5%, 5%, 10%, 20%, 30%, 40%, 50%, 60% of the TAM by year. Illustrative, not a quote. Actual pace, mix, and licensed seat count will vary by workload.</p>
+    <p class="source-note">Figures are NET savings: third-party spend avoided minus the Microsoft license cost incurred, modeled at 80,000 Power Apps Premium seats at $3.79/user/month from Year 1 and, for Dynamics 365, Centene's 61,100-employee headcount at $28.97/user/month licensed in proportion to what has migrated. Migration ramp: 0.45%, 1%, 2.5%, 5%, 10%, 20%, 30%, 40%, 50%, 60% of the TAM by year. Illustrative, not a quote. Actual pace, mix, and licensed seat count will vary by workload.</p>
   </div>
 
   <div class="card">
@@ -927,7 +928,7 @@ function buildSavingsChart() {
     pair.className = "chart-bar-pair";
     const narrowBar = document.createElement("div");
     narrowBar.className = "chart-bar narrow";
-    const fmtM = v => (v < 0 ? "-$" : "$") + Math.abs(Math.round(v)) + "M";
+    const fmtM = v => (v < 0 ? "-$" : "$") + (Math.abs(v) < 10 ? Math.abs(v).toFixed(1) : Math.abs(Math.round(v))) + "M";
     narrowBar.style.height = (Math.max(floorVal, 0) / maxVal * 100) + "%";
     narrowBar.innerHTML = `<span class="bar-label">${fmtM(floorVal)}</span>`;
     const broadBar = document.createElement("div");
