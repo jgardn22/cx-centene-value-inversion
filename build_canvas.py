@@ -62,7 +62,8 @@ CATEGORY_VENDOR_EXAMPLES = {
 }
 
 CENTENE_EMPLOYEES = 61_100  # FY2025 10-K, cross-checked 9/8/2026
-POWERAPPS_RATE = 2.99       # Jake-supplied, per user/month
+POWERAPPS_SEATS = 80_000    # proposed Power Apps Premium seats (55K knowledge + 25K frontline workers)
+POWERAPPS_RATE = 3.79       # Jake-supplied (proposal rate, 10/12/2026), per user/month
 D365_RATE = 28.97           # Jake-supplied, per user/month
 
 NAPKIN_FLOOR_MONTHLY = POWERAPPS_RATE                # floor: Power Apps only
@@ -70,8 +71,8 @@ NAPKIN_CEILING_MONTHLY = POWERAPPS_RATE + D365_RATE  # ceiling: Power Apps + Dyn
 
 
 def floor_ceiling_m(headcount):
-    floor_m = (headcount * NAPKIN_FLOOR_MONTHLY * 12) / 1_000_000
-    ceiling_m = (headcount * NAPKIN_CEILING_MONTHLY * 12) / 1_000_000
+    floor_m = (POWERAPPS_SEATS * NAPKIN_FLOOR_MONTHLY * 12) / 1_000_000
+    ceiling_m = floor_m + (headcount * D365_RATE * 12) / 1_000_000
     return floor_m, ceiling_m
 
 
@@ -622,7 +623,7 @@ PANEL_OPPORTUNITY = f"""
       <div class="stat-card" style="border-top-color:var(--cp-green)"><div class="stat-num" style="color:var(--cp-green)">{fmt_big_m(FLOOR_SAVINGS_POTENTIAL)}</div><p>Save up to this much every year by Year 10, once fully migrated (as low as {fmt_big_m(CEILING_SAVINGS_POTENTIAL)}/yr if broadly licensed)</p></div>
       <div class="stat-card" style="border-top-color:var(--cp-green)"><div class="stat-num" style="color:var(--cp-green)">{fmt_big_m(TENYR_FLOOR_CUMULATIVE)}</div><p>Up to this much in cumulative 10-year savings (as low as {fmt_big_m(TENYR_CEILING_CUMULATIVE)} if broadly licensed)</p></div>
     </div>
-    <p class="source-note">Figures are NET savings: third-party spend avoided minus the Microsoft license cost incurred, modeled against Centene's full 61,100-employee headcount at $2.99/user/month (Power Apps) and $28.97/user/month (Dynamics 365). Illustrative, not a quote. Actual pace, mix, and licensed seat count will vary by workload.</p>
+    <p class="source-note">Figures are NET savings: third-party spend avoided minus the Microsoft license cost incurred, modeled at 80,000 Power Apps Premium seats at $3.79/user/month and, for Dynamics 365, Centene's full 61,100-employee headcount at $28.97/user/month. Illustrative, not a quote. Actual pace, mix, and licensed seat count will vary by workload.</p>
   </div>
 
   <div class="card">
