@@ -80,9 +80,17 @@ FLOOR_M, CEILING_M = floor_ceiling_m(CENTENE_EMPLOYEES)
 FLOOR_SAVINGS_POTENTIAL = TAM_TOTAL - FLOOR_M      # full run-rate $/yr saved, narrow-licensed
 CEILING_SAVINGS_POTENTIAL = TAM_TOTAL - CEILING_M  # full run-rate $/yr saved, broadly-licensed
 
+# Back-loaded migration ramp (% of the TAM migrated each year), capped at 60% by
+# Year 10: no savings in Year 1, minimal in Years 2-3, faster afterwards. The
+# Power Apps license (80,000 seats) is a flat cost from Year 1; Dynamics 365
+# (broad scenario) is licensed in proportion to what has migrated.
+RAMP_PCT = [0, 0.5, 1.5, 5, 10, 20, 30, 40, 50, 60]
 TENYR_YEARS = list(range(1, 11))
-TENYR_FLOOR_ANNUAL = [FLOOR_SAVINGS_POTENTIAL * n / 10 for n in TENYR_YEARS]
-TENYR_CEILING_ANNUAL = [CEILING_SAVINGS_POTENTIAL * n / 10 for n in TENYR_YEARS]
+D365_FULL_M = CENTENE_EMPLOYEES * D365_RATE * 12 / 1_000_000
+TENYR_GROSS_ANNUAL = [TAM_TOTAL * r / 100 for r in RAMP_PCT]
+TENYR_FLOOR_ANNUAL = [g - FLOOR_M for g in TENYR_GROSS_ANNUAL]
+TENYR_CEILING_ANNUAL = [g - FLOOR_M - D365_FULL_M * r / 100 for g, r in zip(TENYR_GROSS_ANNUAL, RAMP_PCT)]
+UPSIDE_TAM_M = TAM_TOTAL - TENYR_GROSS_ANNUAL[-1]
 TENYR_FLOOR_CUMULATIVE = sum(TENYR_FLOOR_ANNUAL)
 TENYR_CEILING_CUMULATIVE = sum(TENYR_CEILING_ANNUAL)
 
@@ -105,7 +113,7 @@ def fmt_big_m(value_m):
 # migration progresses (narrow-licensed / floor scenario). Value realization
 # is illustrative and unitless, shaped only to cross the TCO curve visually.
 _TCO_YEARS = list(range(0, 11))
-TCO_BY_YEAR = [TAM_TOTAL - FLOOR_SAVINGS_POTENTIAL * n / 10 for n in _TCO_YEARS]
+TCO_BY_YEAR = [TAM_TOTAL] + [TAM_TOTAL - v for v in TENYR_FLOOR_ANNUAL]
 VALUE_BY_YEAR = [900 * (n / 10) ** 1.6 for n in _TCO_YEARS]
 _CHART_MAX = max(max(TCO_BY_YEAR), max(VALUE_BY_YEAR)) * 1.05
 _CHART_X0, _CHART_X1 = 50, 750
@@ -611,7 +619,7 @@ PANEL_OPPORTUNITY = f"""
   </div>
 
   <div class="card">
-    <div class="card-header"><h3>The {fmt_big_m(TAM_TOTAL)} opportunity</h3><p>What a 10%-a-year migration to Microsoft saves: annual cost savings vs. today's spend, Year 1&ndash;10.</p></div>
+    <div class="card-header"><h3>The {fmt_big_m(TAM_TOTAL)} opportunity</h3><p>What a deliberately slow, back-loaded migration saves: annual net savings vs. today's spend, Year 1&ndash;10. No savings in Year 1, minimal in Years 2&ndash;3, capped at 60% of the TAM by Year 10.</p></div>
     <div class="chart-wrap">
       <div class="chart-bars" id="savingsChart"></div>
       <div class="chart-legend">
@@ -620,16 +628,16 @@ PANEL_OPPORTUNITY = f"""
       </div>
     </div>
     <div class="stat-grid" style="margin-top:18px">
-      <div class="stat-card" style="border-top-color:var(--cp-green)"><div class="stat-num" style="color:var(--cp-green)">{fmt_big_m(FLOOR_SAVINGS_POTENTIAL)}</div><p>Save up to this much every year by Year 10, once fully migrated (as low as {fmt_big_m(CEILING_SAVINGS_POTENTIAL)}/yr if broadly licensed)</p></div>
-      <div class="stat-card" style="border-top-color:var(--cp-green)"><div class="stat-num" style="color:var(--cp-green)">{fmt_big_m(TENYR_FLOOR_CUMULATIVE)}</div><p>Up to this much in cumulative 10-year savings (as low as {fmt_big_m(TENYR_CEILING_CUMULATIVE)} if broadly licensed)</p></div>
+      <div class="stat-card" style="border-top-color:var(--cp-green)"><div class="stat-num" style="color:var(--cp-green)">{fmt_big_m(TENYR_FLOOR_ANNUAL[-1])}</div><p>Net savings per year by Year 10 with 60% of the {fmt_big_m(TAM_TOTAL)} TAM migrated (as low as {fmt_big_m(TENYR_CEILING_ANNUAL[-1])}/yr if broadly licensed). The other 40%, {fmt_big_m(UPSIDE_TAM_M)}/yr, is upside.</p></div>
+      <div class="stat-card" style="border-top-color:var(--cp-green)"><div class="stat-num" style="color:var(--cp-green)">${TENYR_FLOOR_CUMULATIVE / 1000:.2f}B</div><p>Up to this much in cumulative 10-year net savings (as low as ${TENYR_CEILING_CUMULATIVE / 1000:.2f}B if broadly licensed)</p></div>
     </div>
-    <p class="source-note">Figures are NET savings: third-party spend avoided minus the Microsoft license cost incurred, modeled at 80,000 Power Apps Premium seats at $3.79/user/month and, for Dynamics 365, Centene's full 61,100-employee headcount at $28.97/user/month. Illustrative, not a quote. Actual pace, mix, and licensed seat count will vary by workload.</p>
+    <p class="source-note">Figures are NET savings: third-party spend avoided minus the Microsoft license cost incurred, modeled at 80,000 Power Apps Premium seats at $3.79/user/month from Year 1 and, for Dynamics 365, Centene's 61,100-employee headcount at $28.97/user/month licensed in proportion to what has migrated. Migration ramp: 0%, 0.5%, 1.5%, 5%, 10%, 20%, 30%, 40%, 50%, 60% of the TAM by year. Illustrative, not a quote. Actual pace, mix, and licensed seat count will vary by workload.</p>
   </div>
 
   <div class="card">
     <div class="card-header"><h3>Apps are the real estate: lower cost to own, more capacity for mission</h3><p>What this frees up for Centene.</p></div>
     <div class="stat-grid">
-      <div class="stat-card" style="border-top-color:var(--cp-green)"><div class="stat-num" style="color:var(--cp-green)">{fmt_big_m(TENYR_CEILING_CUMULATIVE)}&ndash;{fmt_big_m(TENYR_FLOOR_CUMULATIVE)}</div><p>saved over 10 years by migrating to Microsoft: capacity to reinvest in member experience, not licensing</p></div>
+      <div class="stat-card" style="border-top-color:var(--cp-green)"><div class="stat-num" style="color:var(--cp-green)">${TENYR_CEILING_CUMULATIVE / 1000:.2f}B&ndash;${TENYR_FLOOR_CUMULATIVE / 1000:.2f}B</div><p>saved over 10 years by migrating to Microsoft: capacity to reinvest in member experience, not licensing</p></div>
       <div class="stat-card" style="border-top-color:var(--cp-purple)"><div class="stat-num" style="color:var(--cp-purple)">3 &rarr; 1</div><p>application categories (CRM, ERP, App Dev) consolidated onto one platform: less integration risk, faster to deploy new capabilities</p></div>
       <div class="stat-card" style="border-top-color:var(--cp-teal)"><div class="stat-num" style="color:var(--cp-teal)">Time back</div><p>AI agents take on high-volume administrative and member-service tasks, freeing staff to focus on members, not systems</p></div>
     </div>
@@ -666,7 +674,7 @@ PANEL_NEW_APPROACH = f"""
   <div class="card">
     <div class="card-header"><h3>The compounding return</h3><p>Total cost of ownership goes down. Value realization goes up.</p></div>
     <div class="compound-chart-wrap">
-      <svg viewBox="0 0 800 260" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Chart showing total cost of ownership declining from {TCO_START_LABEL} per year to {TCO_END_LABEL} over 10 years, while illustrative value realization rises over the same period, crossing around year six.">
+      <svg viewBox="0 0 800 260" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Chart showing total cost of ownership declining from {TCO_START_LABEL} per year to {TCO_END_LABEL} over 10 years, while illustrative value realization rises over the same period, crossing between years seven and eight.">
         <polyline points="{TCO_SVG_POINTS}" fill="none" stroke="var(--cp-green)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
         <polyline points="{VALUE_SVG_POINTS}" fill="none" stroke="var(--cp-purple)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
         <circle cx="50" cy="{TCO_SVG_POINTS.split()[0].split(',')[1]}" r="5" fill="var(--cp-green)" />
@@ -919,12 +927,13 @@ function buildSavingsChart() {
     pair.className = "chart-bar-pair";
     const narrowBar = document.createElement("div");
     narrowBar.className = "chart-bar narrow";
-    narrowBar.style.height = (floorVal / maxVal * 100) + "%";
-    narrowBar.innerHTML = `<span class="bar-label">$${Math.round(floorVal)}M</span>`;
+    const fmtM = v => (v < 0 ? "-$" : "$") + Math.abs(Math.round(v)) + "M";
+    narrowBar.style.height = (Math.max(floorVal, 0) / maxVal * 100) + "%";
+    narrowBar.innerHTML = `<span class="bar-label">${fmtM(floorVal)}</span>`;
     const broadBar = document.createElement("div");
     broadBar.className = "chart-bar broad";
-    broadBar.style.height = (ceilingVal / maxVal * 100) + "%";
-    broadBar.innerHTML = `<span class="bar-label">$${Math.round(ceilingVal)}M</span>`;
+    broadBar.style.height = (Math.max(ceilingVal, 0) / maxVal * 100) + "%";
+    broadBar.innerHTML = `<span class="bar-label">${fmtM(ceilingVal)}</span>`;
     pair.appendChild(narrowBar);
     pair.appendChild(broadBar);
     year.appendChild(pair);
